@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoulBloom - Nurture your mind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-image: url('https://images.unsplash.com/photo-1448375240586-882707db888b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        .water-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .droplet {
+            position: absolute;
+            top: -100px;
+            width: 1.5px;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.3));
+            animation: rain-fall linear infinite;
+        }
+
+        @keyframes rain-fall {
+            from { transform: translateY(0vh); }
+            to { transform: translateY(110vh); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+
+        /* Ripple Effect */
+        .has-ripple {
+            position: relative;
+            overflow: hidden;
+            transform: translate3d(0, 0, 0);
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-effect 0.6s linear;
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        @keyframes ripple-effect {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        #forest-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-black/30 text-[#212529]">
+
+    <div id="background-animation" class="water-container"></div>
+
+    <main id="app-container" class="flex-1 overflow-y-auto pb-24 relative z-10">
+        <!-- Pages will be rendered here by JavaScript -->
+    </main>
+
+    <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md mx-auto bg-white/80 backdrop-blur-xl border border-white/20 flex justify-around items-center p-2 rounded-full shadow-2xl z-20">
+        <button data-page="home" class="nav-button has-ripple flex flex-col items-center justify-center space-y-1 w-16 h-16 rounded-full transition-all duration-300 relative text-[#00a896]">
+            <span class="text-2xl pointer-events-none">🏠</span>
+            <span class="text-xs font-medium text-[#00a896] transition-all duration-300 pointer-events-none opacity-100">Home</span>
+        </button>
+        <button data-page="checkin" class="nav-button has-ripple flex flex-col items-center justify-center space-y-1 w-16 h-16 rounded-full transition-all duration-300 relative text-gray-400 hover:text-[#00a896]">
+            <span class="text-2xl pointer-events-none">❤️</span>
+            <span class="text-xs font-medium text-gray-500 transition-all duration-300 pointer-events-none opacity-75">Check-in</span>
+        </button>
+        <button data-page="moments" class="nav-button has-ripple flex flex-col items-center justify-center space-y-1 w-16 h-16 rounded-full transition-all duration-300 relative text-gray-400 hover:text-[#00a896]">
+            <span class="text-2xl pointer-events-none">🌿</span>
+            <span class="text-xs font-medium text-gray-500 transition-all duration-300 pointer-events-none opacity-75">Moments</span>
+        </button>
+        <button data-page="garden" class="nav-button has-ripple flex flex-col items-center justify-center space-y-1 w-16 h-16 rounded-full transition-all duration-300 relative text-gray-400 hover:text-[#00a896]">
+             <span class="text-2xl pointer-events-none">🪴</span>
+            <span class="text-xs font-medium text-gray-500 transition-all duration-300 pointer-events-none opacity-75">Garden</span>
+        </button>
+        <button data-page="walk" class="nav-button has-ripple flex flex-col items-center justify-center space-y-1 w-16 h-16 rounded-full transition-all duration-300 relative text-gray-400 hover:text-[#00a896]">
+             <span class="text-2xl pointer-events-none">🐾</span>
+            <span class="text-xs font-medium text-gray-500 transition-all duration-300 pointer-events-none opacity-75">Walk</span>
+        </button>
+        <button data-page="aura" class="nav-button has-ripple flex flex-col items-center justify-center space-y-1 w-16 h-16 rounded-full transition-all duration-300 relative text-gray-400 hover:text-[#00a896]">
+            <span class="text-2xl pointer-events-none">✨</span>
+            <span class="text-xs font-medium text-gray-500 transition-all duration-300 pointer-events-none opacity-75">Aura</span>
+        </button>
+    </nav>
+    
+    <div id="moment-modal" class="modal">
+        <!-- Modal content will be rendered here -->
+    </div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- STATE MANAGEMENT ---
+        const state = {
+            activePage: 'home',
+            userName: 'Bloom',
+            mood: null,
+            auraChat: [
+                { sender: 'aura', text: `Hello Bloom, I'm Aura. Think of me as a safe space to explore your thoughts. How are you feeling right now?` }
+            ],
+            garden: {
+                posts: [
+                    { id: 1, alias: 'Wandering River', text: "Feeling overwhelmed with exams this week. It's tough to stay focused.", waters: 12 },
+                    { id: 2, alias: 'Quiet Grove', text: "Celebrated a small win today! Finished a project I was procrastinating on.", waters: 25 },
+                ],
+                wateredPosts: [] // Track watered posts
+            },
+            isAuraLoading: false,
+            activeMomentInterval: null,
+        };
+
+        // --- DOM ELEMENTS ---
+        const appContainer = document.getElementById('app-container');
+        const navButtons = document.querySelectorAll('.nav-button');
+        const modal = document.getElementById('moment-modal');
+
+        // --- TEMPLATES / RENDER FUNCTIONS ---
+
+        const renderHomePage = () => {
+            const quotes = [
+                { text: "The best way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+                { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+                { text: "It’s not whether you get knocked down, it’s whether you get up.", author: "Vince Lombardi" },
+            ];
+            const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+            const quote = quotes[dayOfYear % quotes.length];
+
+            return `
+                <div id="home-page" class="page active p-6 sm:p-8 animate-fade-in max-w-4xl mx-auto">
+                    <header class="flex justify-between items-center">
+                        <div>
+                            <p class="text-white/80 text-lg">Welcome back,</p>
+                            <h1 class="text-4xl md:text-5xl font-bold text-white" style="font-family: 'Playfair Display', serif;">${state.userName}</h1>
+                        </div>
+                        <div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-emerald-200 to-green-300 border-2 border-white/50 shadow-lg"></div>
+                    </header>
+                    
+                    <section class="mt-8">
+                         <h2 class="text-xl md:text-2xl font-bold text-white/90 mb-4" style="font-family: 'Playfair Display', serif;">Quote of the Day</h2>
+                         <div class="bg-black/20 backdrop-blur-lg p-5 rounded-2xl border border-white/10 text-white/90 shadow-xl">
+                            <span class="text-3xl">❝</span>
+                            <p class="text-lg italic">"${quote.text}"</p>
+                            <p class="text-right mt-2 font-semibold">- ${quote.author}</p>
+                         </div>
+                    </section>
+                    
+                    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <section>
+                            <h2 class="text-xl md:text-2xl font-bold text-white/90 mb-4" style="font-family: 'Playfair Display', serif;">How are you feeling?</h2>
+                            <div data-page="checkin" class="page-link has-ripple bg-white/90 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer flex items-center border border-white/20">
+                                <div class="bg-rose-100 rounded-full p-3 text-3xl pointer-events-none">
+                                    ❤️
+                                </div>
+                                <div class="ml-5 pointer-events-none">
+                                    <h3 class="text-lg font-bold text-gray-800">Daily Check-in</h3>
+                                    <p class="text-gray-500">Tap here to log your mood.</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl md:text-2xl font-bold text-white/90 mb-4" style="font-family: 'Playfair Display', serif;">Your Sanctuary</h2>
+                            <div class="space-y-4">
+                                 <div data-page="aura" class="page-link has-ripple bg-white/90 p-5 rounded-2xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer border border-white/20 flex items-center">
+                                     <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100 text-[#00a896] text-3xl pointer-events-none">
+                                        ✨
+                                     </div>
+                                    <div class="ml-4 pointer-events-none">
+                                        <h3 class="text-lg font-bold text-gray-800">Chat with Aura</h3>
+                                        <p class="text-gray-500">Your AI companion.</p>
+                                    </div>
+                                </div>
+                                <div data-page="moments" class="page-link has-ripple bg-white/90 p-5 rounded-2xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer border border-white/20 flex items-center">
+                                     <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-sky-100 text-sky-600 text-3xl pointer-events-none">
+                                        🌿
+                                     </div>
+                                    <div class="ml-4 pointer-events-none">
+                                        <h3 class="text-lg font-bold text-gray-800">Mindful Moments</h3>
+                                        <p class="text-gray-500">Guided exercises.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            `;
+        };
+        
+        const renderCheckinPage = () => {
+             const moods = [
+                { name: 'Radiant', emoji: '🌻', color: 'yellow-300' },
+                { name: 'Happy', emoji: '😊', color: 'lime-300' },
+                { name: 'Calm', emoji: '🪷', color: 'sky-300' },
+                { name: 'Tired', emoji: '😴', color: 'slate-300' },
+                { name: 'Sad', emoji: '🌿', color: 'indigo-300' },
+                { name: 'Anxious', emoji: '🥀', color: 'purple-300' },
+            ];
+
+            let content;
+            if (state.mood) {
+                content = `
+                    <div class="mt-10 flex flex-col items-center animate-fade-in">
+                         <div class="w-40 h-40 rounded-full bg-gradient-to-br from-${state.mood.color} to-white flex items-center justify-center text-7xl mb-6 shadow-2xl">${state.mood.emoji}</div>
+                         <h2 class="text-2xl font-bold text-white" style="font-family: 'Playfair Display', serif;">You're feeling <span class="text-white/90">${state.mood.name}</span>.</h2>
+                         <p class="text-white/80 mt-2 max-w-sm mx-auto">Thank you for sharing. Remember to be kind to yourself today.</p>
+                         <button id="reset-mood" class="has-ripple mt-8 bg-white/90 text-gray-700 font-semibold px-6 py-3 rounded-full shadow-lg border border-gray-200 hover:bg-white transition">Choose another mood</button>
+                    </div>
+                `;
+            } else {
+                content = `
+                    <div class="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-5">
+                        ${moods.map(m => `
+                            <div data-mood='${JSON.stringify(m)}' class="mood-selector has-ripple flex flex-col items-center p-4 bg-white/20 backdrop-blur-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-1 cursor-pointer border border-white/20">
+                                <div class="w-24 h-24 rounded-full bg-gradient-to-br from-${m.color}/50 to-white/30 flex items-center justify-center text-5xl pointer-events-none">${m.emoji}</div>
+                                <p class="mt-3 font-bold text-lg text-white pointer-events-none">${m.name}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            return `
+                 <div id="checkin-page" class="page active p-6 sm:p-8 text-center max-w-4xl mx-auto">
+                    <h1 class="text-4xl md:text-5xl font-bold text-white" style="font-family: 'Playfair Display', serif;">How are you, ${state.userName}?</h1>
+                    <p class="text-white/80 mt-2">Select a mood that best fits you right now.</p>
+                    ${content}
+                </div>
+            `;
+        };
+        
+        const renderMomentsPage = () => {
+            const allMoments = [
+                { id: 'scan', title: "Body Scan Meditation", desc: "For relaxation and grounding.", color: "sky", icon: `🌿` },
+                { id: 'journal', title: "Gratitude Journal", desc: "Focus on the positive.", color: "rose", icon: `❤️` },
+                { id: 'breathing', title: "Box Breathing", desc: "Calm your nervous system.", color: "green", icon: `🧘` },
+            ];
+            
+            return `
+                <div id="moments-page" class="page active p-6 sm:p-8 animate-fade-in max-w-4xl mx-auto">
+                    <h1 class="text-4xl md:text-5xl font-bold text-white" style="font-family: 'Playfair Display', serif;">Mindful Moments</h1>
+                    <p class="text-white/80 mt-2">Choose a guided exercise to find your center.</p>
+                    <div class="mt-8 space-y-4">
+                        ${allMoments.map(moment => `
+                            <div data-moment-id="${moment.id}" class="moment-card has-ripple bg-white/90 p-4 rounded-xl flex items-center space-x-4 cursor-pointer hover:shadow-md transition-shadow border border-gray-100">
+                                <div class="bg-${moment.color}-100 text-${moment.color}-600 rounded-lg p-3 text-3xl pointer-events-none">
+                                    ${moment.icon}
+                                </div>
+                                <div class="pointer-events-none">
+                                    <h3 class="font-bold text-lg text-gray-800">${moment.title}</h3>
+                                    <p class="text-gray-500 text-sm">${moment.desc}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        };
+        
+        const renderAuraPage = () => {
+            return `
+                <div id="aura-page" class="page active flex flex-col h-full bg-black/30">
+                    <header class="p-4 text-center border-b border-white/10 bg-black/20 backdrop-blur-sm">
+                        <h1 class="text-2xl font-bold text-white" style="font-family: 'Playfair Display', serif;">Aura</h1>
+                        <p class="text-sm text-[#00a896] font-medium">Your AI Guide</p>
+                    </header>
+
+                    <div id="aura-chat-window" class="flex-1 overflow-y-auto p-4 space-y-6">
+                        <!-- Chat messages will be rendered here -->
+                    </div>
+
+                    <footer class="p-4 bg-black/10 backdrop-blur-sm border-t border-white/10">
+                        <form id="aura-form" class="flex items-center gap-3">
+                            <input
+                                type="text"
+                                id="aura-input"
+                                placeholder="Message Aura..."
+                                class="flex-1 p-3 px-4 bg-white/10 border border-white/20 rounded-full focus:ring-2 focus:ring-[#00a896] focus:outline-none focus:bg-white/20 text-white placeholder-white/50 transition"
+                            />
+                            <button type="submit" id="aura-submit" class="has-ripple bg-[#00a896] text-white rounded-full p-3 hover:bg-[#007a76] disabled:bg-emerald-300 disabled:scale-100 transition-all transform active:scale-95">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
+                            </button>
+                        </form>
+                    </footer>
+                </div>
+            `;
+        };
+        
+        const renderGardenPage = () => {
+            const postsHtml = state.garden.posts.map(post => {
+                const isWatered = state.garden.wateredPosts.includes(post.id);
+                const buttonClass = isWatered ? 'text-sky-400 cursor-default' : 'text-sky-300 hover:text-sky-200';
+                const buttonDisabled = isWatered ? 'disabled' : '';
+                const svgFill = isWatered ? 'currentColor' : 'none';
+
+                return `
+                     <div class="bg-white/20 backdrop-blur-md p-5 rounded-xl shadow-lg border border-white/20">
+                        <p class="text-white leading-relaxed">"${post.text}"</p>
+                        <div class="flex items-center justify-between mt-4 text-sm">
+                            <p class="font-semibold text-white/70">from ${post.alias}</p>
+                            <button data-post-id="${post.id}" class="water-button has-ripple flex items-center font-medium ${buttonClass}" ${buttonDisabled}>
+                                <svg class="w-5 h-5 mr-1 pointer-events-none" viewBox="0 0 24 24" fill="${svgFill}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+                                <span class="water-count pointer-events-none">${post.waters}</span><span class="pointer-events-none ml-1">Waters</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            return `
+                <div id="garden-page" class="page active p-6 sm:p-8 animate-fade-in max-w-4xl mx-auto">
+                    <h1 class="text-4xl md:text-5xl font-bold text-white" style="font-family: 'Playfair Display', serif;">The Echo Garden</h1>
+                    <p class="text-white/80 mt-2">A safe, anonymous space to share and feel heard.</p>
+                    
+                    <div class="mt-8 bg-white/20 backdrop-blur-md p-5 rounded-xl shadow-lg border border-white/20">
+                        <h3 class="font-bold text-lg text-white/90 mb-2">Plant a Seed</h3>
+                        <textarea id="garden-post-input" class="w-full p-3 bg-white/10 text-white rounded-lg border border-white/20 focus:ring-2 focus:ring-emerald-400 focus:outline-none resize-none placeholder-white/50" rows="3" placeholder="Share a feeling or thought..."></textarea>
+                        <button id="plant-seed-button" class="has-ripple w-full mt-3 bg-emerald-500 text-white font-bold py-2 rounded-full hover:bg-emerald-600 transition-colors">Plant</button>
+                    </div>
+
+                    <div id="garden-posts-container" class="mt-8 space-y-4">
+                        ${postsHtml}
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderWalkPage = () => {
+            return `
+                <div id="walk-page" class="page active h-full flex flex-col">
+                    <div class="p-6 bg-black/20 backdrop-blur-sm">
+                         <h1 class="text-4xl font-bold text-white" style="font-family: 'Playfair Display', serif;">Forest Walk</h1>
+                         <p class="text-white/80 mt-2">Take a mindful walk through the forest.</p>
+                    </div>
+                    <div class="flex-grow relative">
+                        <canvas id="forest-canvas"></canvas>
+                        <div class="absolute top-4 left-4 bg-white/20 backdrop-blur-md p-4 rounded-lg text-white">
+                            <h3 class="font-bold">Steps Today</h3>
+                            <p id="step-count" class="text-3xl font-bold">0</p>
+                        </div>
+                         <div id="path-choice-ui" class="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-4 hidden">
+                            <button data-choice="left" class="path-choice-button has-ripple bg-emerald-500 text-white font-bold py-3 px-6 rounded-full">Go Left</button>
+                            <button data-choice="right" class="path-choice-button has-ripple bg-emerald-500 text-white font-bold py-3 px-6 rounded-full">Go Right</button>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-black/20 backdrop-blur-sm flex justify-center gap-4">
+                        <button id="walk-toggle" class="has-ripple bg-emerald-500 text-white font-bold py-3 px-6 rounded-full">Start Walk</button>
+                        <button id="walk-reset" class="has-ripple bg-gray-500 text-white font-bold py-3 px-6 rounded-full">Reset</button>
+                    </div>
+                </div>
+            `;
+        };
+
+        // --- RENDER LOGIC ---
+        
+        const renderApp = () => {
+            appContainer.innerHTML = ''; // Clear previous content
+            switch (state.activePage) {
+                case 'home':
+                    appContainer.innerHTML = renderHomePage();
+                    break;
+                case 'checkin':
+                    appContainer.innerHTML = renderCheckinPage();
+                    break;
+                case 'moments':
+                    appContainer.innerHTML = renderMomentsPage();
+                    break;
+                case 'garden':
+                    appContainer.innerHTML = renderGardenPage();
+                    break;
+                case 'walk':
+                    appContainer.innerHTML = renderWalkPage();
+                    initForestWalk();
+                    break;
+                case 'aura':
+                    appContainer.innerHTML = renderAuraPage();
+                    renderAuraChat();
+                    break;
+                default:
+                    appContainer.innerHTML = renderHomePage();
+            }
+            updateNav();
+            addEventListeners();
+        };
+        
+        const updateNav = () => {
+            navButtons.forEach(button => {
+                const buttonPage = button.dataset.page;
+                const textSpan = button.querySelector('span.text-xs');
+                
+                if (buttonPage === state.activePage) {
+                    button.classList.add('text-[#00a896]');
+                    button.classList.remove('text-gray-400');
+                    textSpan.classList.add('text-[#00a896]', 'opacity-100');
+                    textSpan.classList.remove('text-gray-500', 'opacity-75');
+                } else {
+                    button.classList.remove('text-[#00a896]');
+                    button.classList.add('text-gray-400');
+                    textSpan.classList.remove('text-[#00a896]', 'opacity-100');
+                    textSpan.classList.add('text-gray-500', 'opacity-75');
+                }
+            });
+        };
+        
+        const renderAuraChat = () => {
+            const chatWindow = document.getElementById('aura-chat-window');
+            if (!chatWindow) return;
+            
+            chatWindow.innerHTML = state.auraChat.map(msg => `
+                <div class="flex items-end gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}">
+                    ${msg.sender === 'aura' ? `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-200 to-emerald-300 text-emerald-700 flex items-center justify-center flex-shrink-0"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><path d="M16 8h4V4"></path><rect width="16" height="12" x="4" y="12" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 18h-6"></path></svg></div>` : ''}
+                    <div class="max-w-xs md:max-w-md p-3 px-4 rounded-2xl shadow-md ${msg.sender === 'user' ? 'bg-[#00a896] text-white rounded-br-none' : 'bg-white/90 text-gray-800 rounded-bl-none border border-gray-100'}">
+                        <p class="text-sm leading-relaxed">${msg.text}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            if (state.isAuraLoading) {
+                 chatWindow.innerHTML += `
+                    <div class="flex items-end gap-3 justify-start">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-200 to-emerald-300 text-emerald-700 flex items-center justify-center flex-shrink-0"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><path d="M16 8h4V4"></path><rect width="16" height="12" x="4" y="12" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 18h-6"></path></svg></div>
+                        <div class="p-3 px-4 rounded-2xl bg-white/90 border border-gray-100">
+                            <div class="flex items-center space-x-1">
+                               <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" style="animation-delay: 0s"></span>
+                               <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></span>
+                               <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        };
+        
+        // --- MODAL LOGIC ---
+        
+        const openMomentModal = (momentId) => {
+            if (state.activeMomentInterval) {
+                clearInterval(state.activeMomentInterval);
+                state.activeMomentInterval = null;
+            }
+
+            let content = '';
+            switch(momentId) {
+                case 'journal':
+                    content = `
+                        <div class="flex flex-col h-full w-full p-6 bg-black/30 backdrop-blur-xl animate-fade-in">
+                            <header class="flex items-center justify-between">
+                                <h1 class="text-3xl font-bold text-white" style="font-family: 'Playfair Display', serif;">Gratitude Journal</h1>
+                                <button class="close-modal text-white/80 hover:text-white"><svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                            </header>
+                            <p class="text-white/90 mt-2">What are three things you're grateful for today?</p>
+                            <textarea
+                                id="journal-entry"
+                                class="flex-1 w-full mt-4 p-4 bg-white/10 text-white rounded-lg border border-white/20 focus:ring-2 focus:ring-rose-400 focus:outline-none resize-none placeholder-white/50"
+                                placeholder="1. The warmth of the sun..."
+                            ></textarea>
+                            <button id="save-journal" class="has-ripple w-full mt-4 bg-rose-500 text-white font-bold py-4 rounded-full hover:bg-rose-600 transition-colors">Save Entry</button>
+                        </div>
+                    `;
+                    break;
+                case 'breathing':
+                     content = `
+                        <div class="flex flex-col h-full w-full p-6 bg-black/30 backdrop-blur-xl text-center justify-between animate-fade-in">
+                            <header class="flex items-center justify-between">
+                                <h1 class="text-3xl font-bold text-white" style="font-family: 'Playfair Display', serif;">Box Breathing</h1>
+                                <button class="close-modal text-white/80 hover:text-white"><svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                            </header>
+                            <div class="flex-1 flex flex-col items-center justify-center">
+                                <div class="relative w-56 h-56 flex items-center justify-center">
+                                    <div id="breathing-box" class="absolute w-full h-full bg-green-500/30 rounded-lg transition-transform duration-[4000ms] ease-in-out"></div>
+                                    <p id="breathing-instruction" class="relative text-4xl font-bold text-white">Breathe In</p>
+                                </div>
+                                <p class="mt-10 text-lg text-white/90">Follow the rhythm. For 4 seconds each.</p>
+                            </div>
+                            <div class="h-10"></div>
+                        </div>
+                    `;
+                    break;
+                 case 'scan':
+                    content = `
+                        <div class="flex flex-col h-full w-full p-6 bg-black/30 backdrop-blur-xl text-center justify-between animate-fade-in">
+                            <header class="flex items-center justify-between">
+                                <h1 class="text-3xl font-bold text-white" style="font-family: 'Playfair Display', serif;">Body Scan</h1>
+                                <button class="close-modal text-white/80 hover:text-white"><svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                            </header>
+                            <div class="flex-1 flex flex-col items-center justify-center">
+                                <p id="scan-instruction" class="text-3xl text-white h-36">Find a comfortable position and gently close your eyes.</p>
+                            </div>
+                            <div class="w-full max-w-sm mx-auto">
+                                <div class="w-full bg-sky-200/30 rounded-full h-2 mb-6">
+                                    <div id="scan-progress" class="bg-sky-400 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <button id="scan-toggle" class="has-ripple bg-white/20 text-white rounded-full p-5 shadow-lg border border-white/20">
+                                    <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+            modal.innerHTML = content;
+            modal.classList.add('active');
+            addModalEventListeners(momentId);
+        };
+
+        const addModalEventListeners = (momentId) => {
+            const closeModal = () => {
+                modal.classList.remove('active');
+                modal.innerHTML = '';
+                if (state.activeMomentInterval) {
+                    clearInterval(state.activeMomentInterval);
+                    state.activeMomentInterval = null;
+                }
+            };
+            
+            modal.querySelector('.close-modal').addEventListener('click', closeModal);
+
+            if (momentId === 'journal') {
+                const saveBtn = document.getElementById('save-journal');
+                saveBtn.addEventListener('click', () => {
+                    saveBtn.textContent = 'Saved!';
+                    setTimeout(() => { saveBtn.textContent = 'Save Entry'; }, 2000);
+                });
+            } else if (momentId === 'breathing') {
+                const instructions = ["Breathe In", "Hold", "Breathe Out", "Hold"];
+                let index = 0;
+                const instructionEl = document.getElementById('breathing-instruction');
+                const boxEl = document.getElementById('breathing-box');
+
+                const updateBreathing = () => {
+                    instructionEl.textContent = instructions[index];
+                    const instruction = instructions[index];
+                    boxEl.style.transform = (instruction === "Breathe In") ? 'scale(1.1)' : (instruction === "Breathe Out") ? 'scale(0.75)' : 'scale(1)';
+                    index = (index + 1) % 4;
+                };
+
+                updateBreathing();
+                state.activeMomentInterval = setInterval(updateBreathing, 4000);
+            } else if (momentId === 'scan') {
+                // Body Scan Logic
+                let isPlaying = true;
+                const steps = [
+                    "Find a comfortable position and gently close your eyes.", "Take a few deep, calming breaths.", "Bring your awareness to the toes of your left foot.", "Slowly, move your attention up your left leg.", "Now, bring awareness to the toes of your right foot.", "Move your attention up through your right leg.", "Focus on your hips, stomach, and lower back.", "Bring your awareness to your chest and shoulders.", "Scan down your left arm, to your fingertips.", "Scan down your right arm, to your fingertips.", "Move your attention to your neck, face, and head.", "Finally, feel your whole body, filled with calm awareness.", "When you're ready, gently open your eyes.",
+                ];
+                const stepDuration = 8000;
+                const totalDuration = steps.length * stepDuration;
+                let progress = 0;
+
+                const instructionEl = document.getElementById('scan-instruction');
+                const progressEl = document.getElementById('scan-progress');
+                const toggleBtn = document.getElementById('scan-toggle');
+                
+                const playIcon = `<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+                const pauseIcon = `<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+
+                const runScan = () => {
+                    if (!isPlaying) return;
+                    progress += 100;
+                    if (progress >= totalDuration) {
+                        progress = totalDuration;
+                        isPlaying = false;
+                        toggleBtn.innerHTML = playIcon;
+                        clearInterval(state.activeMomentInterval);
+                    }
+                    const currentStep = Math.floor(progress / stepDuration);
+                    instructionEl.textContent = steps[currentStep] || steps[steps.length - 1];
+                    progressEl.style.width = `${(progress / totalDuration) * 100}%`;
+                };
+
+                state.activeMomentInterval = setInterval(runScan, 100);
+                
+                toggleBtn.addEventListener('click', () => {
+                    isPlaying = !isPlaying;
+                    toggleBtn.innerHTML = isPlaying ? pauseIcon : playIcon;
+                    if (isPlaying) {
+                        state.activeMomentInterval = setInterval(runScan, 100);
+                    } else {
+                        clearInterval(state.activeMomentInterval);
+                    }
+                });
+            }
+        };
+        
+        // --- EVENT LISTENERS (using delegation) ---
+        
+        const addEventListeners = () => {
+            appContainer.addEventListener('click', (e) => {
+                const target = e.target;
+                
+                // Page links
+                const pageLink = target.closest('.page-link');
+                if (pageLink) {
+                    e.preventDefault();
+                    state.activePage = pageLink.dataset.page;
+                    renderApp();
+                    return;
+                }
+
+                // Moment cards
+                const momentCard = target.closest('.moment-card');
+                if (momentCard) {
+                    openMomentModal(momentCard.dataset.momentId);
+                    return;
+                }
+
+                // Mood selectors
+                const moodSelector = target.closest('.mood-selector');
+                if (moodSelector) {
+                    state.mood = JSON.parse(moodSelector.dataset.mood);
+                    renderApp();
+                    return;
+                }
+                
+                // Reset mood
+                if (target.closest('#reset-mood')) {
+                    state.mood = null;
+                    renderApp();
+                    return;
+                }
+                
+                // Garden: Plant Seed
+                if (target.closest('#plant-seed-button')) {
+                    const input = document.getElementById('garden-post-input');
+                    const text = input.value.trim();
+                    if(text){
+                        const newPost = {
+                            id: Date.now(),
+                            alias: 'New Bloom',
+                            text: text,
+                            waters: 0,
+                        };
+                        state.garden.posts.unshift(newPost);
+                        renderApp();
+                    }
+                    return;
+                }
+                
+                // Garden: Water Post
+                const waterButton = target.closest('.water-button');
+                if (waterButton) {
+                    const postId = parseInt(waterButton.dataset.postId);
+                    if (state.garden.wateredPosts.includes(postId)) {
+                        return; // Already watered
+                    }
+                    
+                    const post = state.garden.posts.find(p => p.id === postId);
+                    if(post) {
+                        post.waters++;
+                        state.garden.wateredPosts.push(postId);
+                        // Just update the specific button instead of re-rendering everything
+                        const countSpan = waterButton.querySelector('.water-count');
+                        const svgIcon = waterButton.querySelector('svg');
+                        countSpan.textContent = post.waters;
+                        waterButton.classList.remove('text-sky-300', 'hover:text-sky-200');
+                        waterButton.classList.add('text-sky-400', 'cursor-default');
+                        svgIcon.setAttribute('fill', 'currentColor');
+                        waterButton.disabled = true;
+                    }
+                }
+            });
+
+            // Aura chat form (remains separate as it's a form submission)
+            const auraForm = document.getElementById('aura-form');
+            if (auraForm) {
+                auraForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const userInput = document.getElementById('aura-input');
+                    const text = userInput.value.trim();
+                    if (!text || state.isAuraLoading) return;
+                    
+                    state.auraChat.push({ sender: 'user', text });
+                    userInput.value = '';
+                    state.isAuraLoading = true;
+                    renderAuraChat();
+
+                    // API Call
+                    try {
+                        let chatHistory = state.auraChat.map(msg => ({
+                            role: msg.sender === 'aura' ? 'model' : 'user',
+                            parts: [{ text: msg.text }]
+                        }));
+                        
+                        const payload = { contents: chatHistory };
+                        const apiKey = "AIzaSyA5qbuqTBFfDxZYeS57h4MwlzBIYmJU0X8"; // Will be injected
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) throw new Error('API Error');
+
+                        const result = await response.json();
+                        const auraResponseText = result.candidates[0].content.parts[0].text;
+                        state.auraChat.push({ sender: 'aura', text: auraResponseText });
+
+                    } catch (error) {
+                        state.auraChat.push({ sender: 'aura', text: "Sorry, I'm having trouble connecting." });
+                    } finally {
+                        state.isAuraLoading = false;
+                        renderAuraChat();
+                    }
+                });
+            }
+        };
+
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                state.activePage = button.dataset.page;
+                renderApp();
+            });
+        });
+
+        // --- RIPPLE EFFECT ---
+        document.body.addEventListener('click', function(e) {
+            const button = e.target.closest('.has-ripple');
+            if (button) {
+                const circle = document.createElement('span');
+                const diameter = Math.max(button.clientWidth, button.clientHeight);
+                const radius = diameter / 2;
+
+                circle.style.width = circle.style.height = `${diameter}px`;
+                circle.style.left = `${e.clientX - (button.getBoundingClientRect().left + radius)}px`;
+                circle.style.top = `${e.clientY - (button.getBoundingClientRect().top + radius)}px`;
+                circle.classList.add('ripple');
+                
+                const existingRipple = button.querySelector('.ripple');
+                if (existingRipple) {
+                    existingRipple.remove();
+                }
+
+                button.appendChild(circle);
+            }
+        });
+
+        // --- 3D FOREST WALK ---
+        const initForestWalk = () => {
+            const canvas = document.getElementById('forest-canvas');
+            if (!canvas) return;
+            
+            let scene, camera, renderer, character, clock;
+            let stepCount = 0;
+            let isWalking = false;
+            let animationFrameId;
+
+            const stepCountEl = document.getElementById('step-count');
+            const walkToggleBtn = document.getElementById('walk-toggle');
+            const walkResetBtn = document.getElementById('walk-reset');
+
+            function init() {
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x335833);
+                scene.fog = new THREE.Fog(0x335833, 10, 50);
+
+                camera = new THREE.PerspectiveCamera(75, canvas.parentElement.clientWidth / canvas.parentElement.clientHeight, 0.1, 1000);
+                camera.position.set(0, 1.6, 5);
+                
+                renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+                renderer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight);
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.shadowMap.enabled = true;
+
+                // Lights
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+                scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+                dirLight.position.set(-10, 20, 10);
+                dirLight.castShadow = true;
+                scene.add(dirLight);
+
+                // Ground
+                const groundGeo = new THREE.PlaneGeometry(100, 200);
+                const groundMat = new THREE.MeshLambertMaterial({ color: 0x1e4620 });
+                const ground = new THREE.Mesh(groundGeo, groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.receiveShadow = true;
+                scene.add(ground);
+
+                // Path
+                const pathGeo = new THREE.PlaneGeometry(4, 200);
+                const pathMat = new THREE.MeshLambertMaterial({ color: 0x5d432c });
+                const path = new THREE.Mesh(pathGeo, pathMat);
+                path.rotation.x = -Math.PI / 2;
+                path.position.y = 0.01;
+                scene.add(path);
+
+
+                // Character
+                character = new THREE.Group();
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), new THREE.MeshLambertMaterial({ color: 0xffdbac }));
+                head.position.y = 1.5;
+                const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.4), new THREE.MeshLambertMaterial({ color: 0x4682B4 }));
+                torso.position.y = 0.9;
+                character.add(head, torso);
+                
+                const legMat = new THREE.MeshLambertMaterial({ color: 0x2F4F4F });
+                const armMat = new THREE.MeshLambertMaterial({ color: 0xffdbac });
+
+                character.leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), legMat);
+                character.leftLeg.position.set(-0.15, 0.4, 0);
+                character.add(character.leftLeg);
+                
+                character.rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), legMat);
+                character.rightLeg.position.set(0.15, 0.4, 0);
+                character.add(character.rightLeg);
+                
+                character.leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.7, 0.15), armMat);
+                character.leftArm.position.set(-0.4, 1.1, 0);
+                character.add(character.leftArm);
+
+                character.rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.7, 0.15), armMat);
+                character.rightArm.position.set(0.4, 1.1, 0);
+                character.add(character.rightArm);
+                
+                character.castShadow = true;
+                character.traverse(c => { if (c.isMesh) c.castShadow = true; });
+                scene.add(character);
+
+                // Trees
+                const treeMatTrunk = new THREE.MeshLambertMaterial({ color: 0x5d432c });
+                const treeMatFoliage = new THREE.MeshLambertMaterial({ color: 0x2e6b30 });
+                
+                for (let i = 0; i < 200; i++) {
+                    const tree = new THREE.Group();
+                    const trunkHeight = Math.random() * 6 + 5;
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.4, trunkHeight, 8), treeMatTrunk);
+                    trunk.position.y = trunkHeight / 2;
+                    trunk.castShadow = true;
+                    tree.add(trunk);
+
+                    const foliage = new THREE.Mesh(new THREE.IcosahedronGeometry(Math.random() * 1.5 + 1.2, 0), treeMatFoliage);
+                    foliage.position.y = trunkHeight;
+                    foliage.castShadow = true;
+                    tree.add(foliage);
+
+                    tree.position.set(
+                        (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 30 + 4),
+                        0,
+                        (Math.random() - 0.5) * 200
+                    );
+                    scene.add(tree);
+                }
+                
+                clock = new THREE.Clock();
+
+                animate();
+            }
+
+            function animate() {
+                animationFrameId = requestAnimationFrame(animate);
+                const delta = clock.getDelta();
+                const time = Date.now() * 0.005;
+
+                if (isWalking) {
+                    character.position.z -= delta * 3;
+                    stepCount += Math.random() * 2;
+                    stepCountEl.textContent = Math.floor(stepCount);
+                    
+                    // Walk animation
+                    const angle = Math.sin(time * 10) * 0.5;
+                    character.leftLeg.rotation.x = angle;
+                    character.rightLeg.rotation.x = -angle;
+                    character.leftArm.rotation.x = -angle;
+                    character.rightArm.rotation.x = angle;
+                    
+                    character.position.y = 0.75 + Math.abs(Math.sin(time * 10) * 0.05); 
+                } else {
+                    character.leftLeg.rotation.x = 0;
+                    character.rightLeg.rotation.x = 0;
+                    character.leftArm.rotation.x = 0;
+                    character.rightArm.rotation.x = 0;
+                    character.position.y = 0.75;
+                }
+                
+                const cameraTarget = new THREE.Vector3(
+                    character.position.x,
+                    character.position.y + 1.6,
+                    character.position.z + 5
+                );
+                camera.position.lerp(cameraTarget, 0.1);
+                camera.lookAt(character.position);
+
+                renderer.render(scene, camera);
+            }
+
+            walkToggleBtn.addEventListener('click', () => {
+                isWalking = !isWalking;
+                walkToggleBtn.textContent = isWalking ? 'Pause Walk' : 'Start Walk';
+            });
+
+            walkResetBtn.addEventListener('click', () => {
+                isWalking = false;
+                walkToggleBtn.textContent = 'Start Walk';
+                character.position.set(0, 0, 0);
+                stepCount = 0;
+                stepCountEl.textContent = '0';
+            });
+            
+
+            window.addEventListener('resize', () => {
+                camera.aspect = canvas.parentElement.clientWidth / canvas.parentElement.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight);
+            });
+
+            init();
+            
+            // Cleanup on page change
+            const observer = new MutationObserver(() => {
+                if (!document.getElementById('walk-page')) {
+                    cancelAnimationFrame(animationFrameId);
+                    observer.disconnect();
+                }
+            });
+            observer.observe(appContainer, { childList: true });
+        };
+
+
+        // --- INITIAL RENDER & LISTENERS ---
+        renderApp();
+        
+    });
+</script>
+
+</body>
+</html>
